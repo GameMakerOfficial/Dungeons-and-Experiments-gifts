@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RPG ADMIN - Darmowe Gifty</title>
+    <title>RPG ADMIN - Panel Giftów i Rang</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
     <!-- BIBLIOTEKI FIREBASE -->
@@ -18,33 +18,34 @@
             display: flex; 
             justify-content: center; 
             align-items: center; 
-            height: 100vh; 
+            min-height: 100vh; 
             background-image: radial-gradient(circle, #2C1A0E 10%, #000 80%);
+            padding: 20px;
         }
         
         .admin-panel { 
             background: #5E3A21; 
             border: 4px solid #3A2313; 
             border-radius: 8px; 
-            padding: 25px; 
+            padding: 20px; 
             text-align: center; 
             box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.9); 
-            width: 90%; 
+            width: 100%; 
             max-width: 350px; 
         }
         
-        h2 { font-size: 12px; color: #FF9800; margin-bottom: 20px; text-shadow: 2px 2px 0 #000; line-height: 1.5; }
+        h2 { font-size: 11px; color: #FF9800; margin-bottom: 15px; text-shadow: 2px 2px 0 #000; line-height: 1.5; }
         
-        .input-group { text-align: left; margin-bottom: 15px; }
-        .input-group label { font-size: 8px; color: #FFD700; display: block; margin-bottom: 5px; }
+        .input-group { text-align: left; margin-bottom: 12px; }
+        .input-group label { font-size: 7px; color: #FFD700; display: block; margin-bottom: 4px; }
         
         input, select { 
             width: 100%; 
-            padding: 12px; 
+            padding: 10px; 
             background: #2C1A0E; 
             border: 2px solid #8B5A2B; 
             color: #fff; 
-            font-size: 10px; 
+            font-size: 9px; 
             outline: none; 
             border-radius: 4px; 
         }
@@ -53,15 +54,15 @@
             background: #9C27B0; 
             border: 4px solid #7B1FA2; 
             color: white; 
-            padding: 15px; 
-            font-size: 10px; 
+            padding: 12px; 
+            font-size: 9px; 
             text-transform: uppercase; 
             cursor: pointer; 
             box-shadow: 0 4px 0 #4A148C; 
             border-radius: 4px; 
             text-shadow: 2px 2px 0px #000; 
             width: 100%;
-            margin-top: 10px;
+            margin-top: 5px;
             transition: transform 0.1s ease, box-shadow 0.1s ease;
         }
         .btn:active { 
@@ -70,50 +71,83 @@
         }
 
         #status-msg {
-            margin-top: 15px;
-            font-size: 9px;
-            line-height: 1.5;
+            margin-top: 12px;
+            font-size: 8px;
+            line-height: 1.4;
             min-height: 20px;
         }
         .success { color: #4CAF50; }
         .error { color: #f44336; }
         .loading { color: #2196F3; }
+        
+        .section-divider {
+            border: 0;
+            height: 2px;
+            background: #3A2313;
+            margin: 15px 0;
+        }
     </style>
 </head>
 <body>
 
     <div class="admin-panel">
-        <h2>🎁 SECRET<br>GIFT PANEL</h2>
+        <h2>🎁 ADMIN PANEL<br>GIFTY & RANGI</h2>
         
         <div class="input-group">
             <label>NICK GRACZA:</label>
             <input type="text" id="target-nick" placeholder="Wpisz nick..." autocomplete="off">
         </div>
 
+        <hr class="section-divider">
+
+        <!-- SEKCJA WYBORU TYPU PREZENTU -->
         <div class="input-group">
-            <label>WYBIERZ PRZEDMIOT:</label>
-            <select id="gift-res">
-                <option value="plank">🪵 Drewno (Plank)</option>
-                <option value="stone">🪨 Kamień (Stone)</option>
-                <option value="meat">🍖 Mięso (Meat)</option>
-                <option value="metal">⚙️ Metal</option>
-                <option value="diamond">💎 Diament (Diamond)</option>
-                <option value="mythril">🔮 Mithril (Mythril)</option>
+            <label>TYP PREZENTU:</label>
+            <select id="gift-type" onchange="toggleGiftFields()">
+                <option value="resource">Surowce / Itemy</option>
+                <option value="rank">Specjalna Ranga</option>
             </select>
         </div>
 
-        <div class="input-group">
-            <label>ILOŚĆ:</label>
-            <input type="number" id="gift-amount" placeholder="Np. 100" min="1">
+        <!-- OPCJE DLA SUROWCÓW -->
+        <div id="resource-options">
+            <div class="input-group">
+                <label>WYBIERZ SUROWIEC:</label>
+                <select id="gift-res">
+                    <option value="plank">🪵 Drewno (Plank)</option>
+                    <option value="stone">🪨 Kamień (Stone)</option>
+                    <option value="meat">🍖 Mięso (Meat)</option>
+                    <option value="metal">⚙️ Metal</option>
+                    <option value="diamond">💎 Diament (Diamond)</option>
+                    <option value="mythril">🔮 Mithril (Mythril)</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>ILOŚĆ:</label>
+                <input type="number" id="gift-amount" placeholder="Np. 100" min="1" value="1">
+            </div>
         </div>
 
-        <button class="btn" onclick="sendResourceGift()">WYŚLIJ PREZENT</button>
+        <!-- OPCJE DLA RANG (DOMYŚLNIE UKRYTE) -->
+        <div id="rank-options" style="display: none;">
+            <div class="input-group">
+                <label>WYBIERZ RANGĘ:</label>
+                <select id="gift-rank-name">
+                    <option value="VIP">VIP</option>
+                    <option value="MODERATOR">MODERATOR</option>
+                    <option value="OWNER">OWNER</option>
+                    <option value="PLAYER">PLAYER (Reset)</option>
+                </select>
+            </div>
+        </div>
+
+        <button class="btn" onclick="sendGift()">WYŚLIJ DO GRACZA</button>
         
         <div id="status-msg"></div>
     </div>
 
     <script>
-        // KONFIGURACJA FIREBASE
+        // KONFIGURACJA FIREBASE (Ta sama co w grze)
         const firebaseConfig = {
             apiKey: "AIzaSyDbVxlkWCzXBmsnQ5uvFpuW91Xevf2ZR54",
             authDomain: "dungeons-and-experiments.firebaseapp.com",
@@ -126,13 +160,23 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        async function sendResourceGift() {
+        // Przełączanie widoczności pól w zależności od wybranego typu prezentu
+        function toggleGiftFields() {
+            let type = document.getElementById("gift-type").value;
+            if (type === "resource") {
+                document.getElementById("resource-options").style.display = "block";
+                document.getElementById("rank-options").style.display = "none";
+            } else {
+                document.getElementById("resource-options").style.display = "none";
+                document.getElementById("rank-options").style.display = "block";
+            }
+        }
+
+        async function sendGift() {
             let nick = document.getElementById("target-nick").value.trim();
-            let resType = document.getElementById("gift-res").value;
-            let amount = parseInt(document.getElementById("gift-amount").value);
+            let giftType = document.getElementById("gift-type").value;
             let status = document.getElementById("status-msg");
 
-            // Reset statusu
             status.className = "";
             status.innerText = "";
 
@@ -141,14 +185,9 @@
                 status.innerText = "Błąd: Wpisz nick gracza!";
                 return;
             }
-            if (!amount || amount <= 0) {
-                status.className = "error";
-                status.innerText = "Błąd: Wpisz poprawną ilość (minimum 1)!";
-                return;
-            }
 
             status.className = "loading";
-            status.innerText = "Szukanie gracza i wysyłanie...";
+            status.innerText = "Łączenie z bazą...";
 
             try {
                 let targetRef = db.collection("users").doc(nick);
@@ -160,27 +199,38 @@
                     return;
                 }
 
-                // Struktura prezentu surowcowego
                 let gift = {
                     id: Date.now(),
-                    from: "ADMIN (Ty)", // Nazwa od kogo jest prezent
-                    type: "resource",
-                    resType: resType,
-                    resAmount: amount
+                    from: "ADMIN (Ty)",
+                    type: giftType
                 };
 
-                // Dodanie prezentu do tablicy 'inbox' wybranego gracza
+                if (giftType === "resource") {
+                    let resType = document.getElementById("gift-res").value;
+                    let amount = parseInt(document.getElementById("gift-amount").value);
+                    
+                    if (!amount || amount <= 0) {
+                        status.className = "error";
+                        status.innerText = "Błąd: Podaj poprawną ilość!";
+                        return;
+                    }
+                    gift.resType = resType;
+                    gift.resAmount = amount;
+                } else {
+                    let rankName = document.getElementById("gift-rank-name").value;
+                    gift.rankName = rankName;
+                }
+
+                // Wrzucenie prezentu do skrytki (inbox) gracza w bazie danych
                 await targetRef.update({
                     inbox: firebase.firestore.FieldValue.arrayUnion(gift)
                 });
 
-                // Sukces
                 status.className = "success";
-                status.innerText = `Sukces! Wysłano ${amount}x ${resType.toUpperCase()} do gracza ${nick}.`;
+                status.innerText = `Sukces! Wysłano prezent do gracza ${nick}.`;
                 
-                // Czyszczenie pól (opcjonalnie)
+                // Czyszczenie nicku po udanym wysłaniu
                 document.getElementById("target-nick").value = "";
-                document.getElementById("gift-amount").value = "";
                 
             } catch (e) {
                 status.className = "error";
@@ -189,5 +239,4 @@
         }
     </script>
 </body>
-  </html>
-
+</html>

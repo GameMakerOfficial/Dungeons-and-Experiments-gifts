@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RPG ADMIN - Darmowe Gifty</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    
+    <!-- BIBLIOTEKI FIREBASE -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Press Start 2P', monospace; }
+        body { 
+            background-color: #000; 
+            color: #fff; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            background-image: radial-gradient(circle, #2C1A0E 10%, #000 80%);
+        }
+        
+        .admin-panel { 
+            background: #5E3A21; 
+            border: 4px solid #3A2313; 
+            border-radius: 8px; 
+            padding: 25px; 
+            text-align: center; 
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.9); 
+            width: 90%; 
+            max-width: 350px; 
+        }
+        
+        h2 { font-size: 12px; color: #FF9800; margin-bottom: 20px; text-shadow: 2px 2px 0 #000; line-height: 1.5; }
+        
+        .input-group { text-align: left; margin-bottom: 15px; }
+        .input-group label { font-size: 8px; color: #FFD700; display: block; margin-bottom: 5px; }
+        
+        input, select { 
+            width: 100%; 
+            padding: 12px; 
+            background: #2C1A0E; 
+            border: 2px solid #8B5A2B; 
+            color: #fff; 
+            font-size: 10px; 
+            outline: none; 
+            border-radius: 4px; 
+        }
+        
+        .btn { 
+            background: #9C27B0; 
+            border: 4px solid #7B1FA2; 
+            color: white; 
+            padding: 15px; 
+            font-size: 10px; 
+            text-transform: uppercase; 
+            cursor: pointer; 
+            box-shadow: 0 4px 0 #4A148C; 
+            border-radius: 4px; 
+            text-shadow: 2px 2px 0px #000; 
+            width: 100%;
+            margin-top: 10px;
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+        .btn:active { 
+            transform: translateY(4px); 
+            box-shadow: 0 0 0 #4A148C; 
+        }
+
+        #status-msg {
+            margin-top: 15px;
+            font-size: 9px;
+            line-height: 1.5;
+            min-height: 20px;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .loading { color: #2196F3; }
+    </style>
+</head>
+<body>
+
+    <div class="admin-panel">
+        <h2>🎁 SECRET<br>GIFT PANEL</h2>
+        
+        <div class="input-group">
+            <label>NICK GRACZA:</label>
+            <input type="text" id="target-nick" placeholder="Wpisz nick..." autocomplete="off">
+        </div>
+
+        <div class="input-group">
+            <label>WYBIERZ PRZEDMIOT:</label>
+            <select id="gift-res">
+                <option value="plank">🪵 Drewno (Plank)</option>
+                <option value="stone">🪨 Kamień (Stone)</option>
+                <option value="meat">🍖 Mięso (Meat)</option>
+                <option value="metal">⚙️ Metal</option>
+                <option value="diamond">💎 Diament (Diamond)</option>
+                <option value="mythril">🔮 Mithril (Mythril)</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>ILOŚĆ:</label>
+            <input type="number" id="gift-amount" placeholder="Np. 100" min="1">
+        </div>
+
+        <button class="btn" onclick="sendResourceGift()">WYŚLIJ PREZENT</button>
+        
+        <div id="status-msg"></div>
+    </div>
+
+    <script>
+        // KONFIGURACJA FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyDbVxlkWCzXBmsnQ5uvFpuW91Xevf2ZR54",
+            authDomain: "dungeons-and-experiments.firebaseapp.com",
+            projectId: "dungeons-and-experiments",
+            storageBucket: "dungeons-and-experiments.firebasestorage.app",
+            messagingSenderId: "104990230475",
+            appId: "1:104990230475:web:58e9dcca6be7a434ded84e"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        async function sendResourceGift() {
+            let nick = document.getElementById("target-nick").value.trim();
+            let resType = document.getElementById("gift-res").value;
+            let amount = parseInt(document.getElementById("gift-amount").value);
+            let status = document.getElementById("status-msg");
+
+            // Reset statusu
+            status.className = "";
+            status.innerText = "";
+
+            if (!nick) {
+                status.className = "error";
+                status.innerText = "Błąd: Wpisz nick gracza!";
+                return;
+            }
+            if (!amount || amount <= 0) {
+                status.className = "error";
+                status.innerText = "Błąd: Wpisz poprawną ilość (minimum 1)!";
+                return;
+            }
+
+            status.className = "loading";
+            status.innerText = "Szukanie gracza i wysyłanie...";
+
+            try {
+                let targetRef = db.collection("users").doc(nick);
+                let snap = await targetRef.get();
+                
+                if (!snap.exists) {
+                    status.className = "error";
+                    status.innerText = "Błąd: Gracz '" + nick + "' nie istnieje!";
+                    return;
+                }
+
+                // Struktura prezentu surowcowego
+                let gift = {
+                    id: Date.now(),
+                    from: "ADMIN (Ty)", // Nazwa od kogo jest prezent
+                    type: "resource",
+                    resType: resType,
+                    resAmount: amount
+                };
+
+                // Dodanie prezentu do tablicy 'inbox' wybranego gracza
+                await targetRef.update({
+                    inbox: firebase.firestore.FieldValue.arrayUnion(gift)
+                });
+
+                // Sukces
+                status.className = "success";
+                status.innerText = `Sukces! Wysłano ${amount}x ${resType.toUpperCase()} do gracza ${nick}.`;
+                
+                // Czyszczenie pól (opcjonalnie)
+                document.getElementById("target-nick").value = "";
+                document.getElementById("gift-amount").value = "";
+                
+            } catch (e) {
+                status.className = "error";
+                status.innerText = "Wystąpił błąd: " + e.message;
+            }
+        }
+    </script>
+</body>
+  </html>
+

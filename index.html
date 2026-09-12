@@ -8,6 +8,7 @@
     
     <!-- BIBLIOTEKI FIREBASE -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <style>
@@ -70,7 +71,7 @@
             box-shadow: 0 0 0 #4A148C; 
         }
 
-        #status-msg {
+        #status-msg, #login-status {
             margin-top: 12px;
             font-size: 8px;
             line-height: 1.4;
@@ -90,7 +91,26 @@
 </head>
 <body>
 
-    <div class="admin-panel">
+    <!-- EKRAN LOGOWANIA ADMINA -->
+    <div class="admin-panel" id="login-box">
+        <h2>🔒 PANEL ADMINA<br>AUTORYZACJA</h2>
+        
+        <div class="input-group">
+            <label>EMAIL ADMINA:</label>
+            <input type="email" id="admin-email" placeholder="admin@game.com">
+        </div>
+
+        <div class="input-group">
+            <label>HASŁO / PIN:</label>
+            <input type="password" id="admin-pass" placeholder="••••••••">
+        </div>
+
+        <button class="btn" onclick="loginAdmin()">ZALOGUJ SIĘ</button>
+        <div id="login-status"></div>
+    </div>
+
+    <!-- PANEL AKCJI (DOMYŚLNIE UKRYTY) -->
+    <div class="admin-panel" id="main-panel" style="display: none;">
         <h2>🎁 ADMIN PANEL<br>GIFTY & RANGI</h2>
         
         <div class="input-group">
@@ -100,7 +120,6 @@
 
         <hr class="section-divider">
 
-        <!-- SEKCJA WYBORU TYPU PREZENTU -->
         <div class="input-group">
             <label>TYP PREZENTU:</label>
             <select id="gift-type" onchange="toggleGiftFields()">
@@ -109,7 +128,6 @@
             </select>
         </div>
 
-        <!-- OPCJE DLA SUROWCÓW -->
         <div id="resource-options">
             <div class="input-group">
                 <label>WYBIERZ SUROWIEC:</label>
@@ -128,7 +146,6 @@
             </div>
         </div>
 
-        <!-- OPCJE DLA RANG (DOMYŚLNIE UKRYTE) -->
         <div id="rank-options" style="display: none;">
             <div class="input-group">
                 <label>WYBIERZ RANGĘ:</label>
@@ -142,12 +159,12 @@
         </div>
 
         <button class="btn" onclick="sendGift()">WYŚLIJ DO GRACZA</button>
+        <button class="btn" style="background: #f44336; border-color: #d32f2f; margin-top: 10px;" onclick="logoutAdmin()">WYLOGUJ</button>
         
         <div id="status-msg"></div>
     </div>
 
     <script>
-        // KONFIGURACJA FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyDbVxlkWCzXBmsnQ5uvFpuW91Xevf2ZR54",
             authDomain: "dungeons-and-experiments.firebaseapp.com",
@@ -159,8 +176,41 @@
         
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const auth = firebase.auth();
 
-        // Przełączanie widoczności pól w zależności od wybranego typu prezentu
+        // Sprawdzanie stanu zalogowania
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById("login-box").style.display = "none";
+                document.getElementById("main-panel").style.display = "block";
+            } else {
+                document.getElementById("login-box").style.display = "block";
+                document.getElementById("main-panel").style.display = "none";
+            }
+        });
+
+        async function loginAdmin() {
+            let email = document.getElementById("admin-email").value;
+            let pass = document.getElementById("admin-pass").value;
+            let status = document.getElementById("login-status");
+
+            status.className = "loading";
+            status.innerText = "Logowanie...";
+
+            try {
+                await auth.signInWithEmailAndPassword(email, pass);
+                status.className = "success";
+                status.innerText = "Zalogowano!";
+            } catch (e) {
+                status.className = "error";
+                status.innerText = "Błąd: " + e.message;
+            }
+        }
+
+        function logoutAdmin() {
+            auth.signOut();
+        }
+
         function toggleGiftFields() {
             let type = document.getElementById("gift-type").value;
             if (type === "resource") {
@@ -201,7 +251,7 @@
 
                 let gift = {
                     id: Date.now(),
-                    from: "ADMIN (Ty)",
+                    from: "ADMIN",
                     type: giftType
                 };
 
@@ -221,15 +271,12 @@
                     gift.rankName = rankName;
                 }
 
-                // Wrzucenie prezentu do skrytki (inbox) gracza w bazie danych
                 await targetRef.update({
                     inbox: firebase.firestore.FieldValue.arrayUnion(gift)
                 });
 
                 status.className = "success";
                 status.innerText = `Sukces! Wysłano prezent do gracza ${nick}.`;
-                
-                // Czyszczenie nicku po udanym wysłaniu
                 document.getElementById("target-nick").value = "";
                 
             } catch (e) {

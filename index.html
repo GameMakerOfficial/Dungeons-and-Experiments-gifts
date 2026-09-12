@@ -71,11 +71,18 @@
             box-shadow: 0 0 0 #4A148C; 
         }
 
+        .btn-sec {
+            background: #2196F3;
+            border-color: #1976D2;
+            box-shadow: 0 4px 0 #0D47A1;
+        }
+
         #status-msg, #login-status {
             margin-top: 12px;
             font-size: 8px;
             line-height: 1.4;
             min-height: 20px;
+            word-break: break-word;
         }
         .success { color: #4CAF50; }
         .error { color: #f44336; }
@@ -97,7 +104,7 @@
         
         <div class="input-group">
             <label>EMAIL ADMINA:</label>
-            <input type="email" id="admin-email" placeholder="admin@game.com">
+            <input type="email" id="admin-email" placeholder="admin@game.com" value="gamemakeroffcial@gmail.com">
         </div>
 
         <div class="input-group">
@@ -106,6 +113,8 @@
         </div>
 
         <button class="btn" onclick="loginAdmin()">ZALOGUJ SIĘ</button>
+        <button class="btn btn-sec" style="margin-top: 8px;" onclick="resetPassword()">RESETUJ HASŁO MAILEM</button>
+        
         <div id="login-status"></div>
     </div>
 
@@ -190,12 +199,18 @@
         });
 
         async function loginAdmin() {
-            let email = document.getElementById("admin-email").value;
-            let pass = document.getElementById("admin-pass").value;
+            let email = document.getElementById("admin-email").value.trim();
+            let pass = document.getElementById("admin-pass").value.trim();
             let status = document.getElementById("login-status");
 
             status.className = "loading";
             status.innerText = "Logowanie...";
+
+            if (!email || !pass) {
+                status.className = "error";
+                status.innerText = "Podaj e-mail oraz hasło!";
+                return;
+            }
 
             try {
                 await auth.signInWithEmailAndPassword(email, pass);
@@ -204,6 +219,30 @@
             } catch (e) {
                 status.className = "error";
                 status.innerText = "Błąd: " + e.message;
+                console.error("Szczegóły błędu:", e);
+            }
+        }
+
+        async function resetPassword() {
+            let email = document.getElementById("admin-email").value.trim();
+            let status = document.getElementById("login-status");
+
+            if (!email) {
+                status.className = "error";
+                status.innerText = "Wpisz e-mail do resetu!";
+                return;
+            }
+
+            status.className = "loading";
+            status.innerText = "Wysyłanie linku...";
+
+            try {
+                await auth.sendPasswordResetEmail(email);
+                status.className = "success";
+                status.innerText = "Wysłano link do resetu na podany e-mail!";
+            } catch (e) {
+                status.className = "error";
+                status.innerText = "Błąd resetu: " + e.message;
             }
         }
 
